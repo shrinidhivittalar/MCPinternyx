@@ -18,10 +18,18 @@ let contextPromise: Promise<BrowserContext> | null = null;
  */
 export function getBrowserContext(): Promise<BrowserContext> {
   if (!contextPromise) {
-    contextPromise = chromium.launchPersistentContext(USER_DATA_DIR, {
-      headless: false,
-      viewport: { width: 1280, height: 900 },
-    });
+    contextPromise = chromium
+      .launchPersistentContext(USER_DATA_DIR, {
+        headless: false,
+        viewport: { width: 1280, height: 900 },
+      })
+      .catch((err) => {
+        // Don't cache a failed launch — otherwise every later call fails the
+        // same way until the process restarts, even if the cause (e.g. the
+        // profile being locked by another Chrome instance) has cleared.
+        contextPromise = null;
+        throw err;
+      });
   }
   return contextPromise;
 }

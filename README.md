@@ -77,10 +77,14 @@ Ask Claude Code to fill your diary, e.g.:
 > Use fill_daily_diary to log: "Worked on the onboarding module today, fixed
 > two bugs in the auth flow."
 
-The tool will:
+Internyx is a single-page app: after login, the session stays on
+`/intern/dashboard` and the Diary section is revealed by clicking a "Diary"
+nav control rather than navigating to a separate URL. The tool will:
 1. Reuse the persisted browser session (or prompt you to log in if needed).
-2. Locate the Daily Diary field and fill it with the given text.
-3. Leave the browser open and tell you to review and click
+2. Click the Diary nav control if the Diary section isn't already open.
+3. Locate the Daily Diary field and fill it with the given text (this
+   **overwrites** whatever was already in the field, it does not append).
+4. Leave the browser open and tell you to review and click
    "SAVE DIARY ENTRY" yourself.
 
 ## Testing the tool
@@ -94,14 +98,18 @@ npx @modelcontextprotocol/inspector node dist/index.js
 This opens a web UI where you can call `fill_daily_diary` directly with a
 `content` string and watch the browser window respond.
 
-## A note on the diary field selector
+## A note on the selectors
 
 The Daily Diary field selector in `src/tools/fillDiary.ts`
-(`candidateLocators`) was written without being able to inspect the live
-portal's DOM (no network access to `internyx.ellipsonic.com` from the dev
-environment used to build this). It tries several accessible/semantic
-locator strategies in order (label, ARIA role, placeholder, heading-adjacent
-textarea, contenteditable). If none match on the real page, the tool throws
-an error listing every strategy it tried — inspect the field in the open
-browser window (right-click → Inspect) and adjust `candidateLocators()`
+(`candidateFieldLocators`) is verified against the live DOM: it matches the
+field's actual placeholder text ("Describe what you worked on today,
+blockers, progress…").
+
+The "Diary" nav control selector (`candidateDiaryNavLocators`) tries several
+accessible-role guesses (link, button, tab, menuitem) in order, since the
+exact role Internyx uses wasn't pinned down — one of them matches in
+practice (confirmed by an end-to-end test), so the list is kept as-is. If
+Internyx's markup changes and this starts failing, the tool throws an error
+listing every strategy it tried — inspect the control in the open browser
+window (right-click → Inspect) and adjust `candidateDiaryNavLocators()`
 accordingly.

@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { fillDailyDiary } from "./tools/fillDiary.js";
+import { log } from "./logger.js";
 
 const server = new McpServer({
   name: "mcp-internyx",
@@ -21,13 +22,16 @@ server.registerTool(
     },
   },
   async ({ content }) => {
+    log("tool_call.received", { tool: "fill_daily_diary", content });
     try {
       const result = await fillDailyDiary(content);
+      log("tool_call.result", { tool: "fill_daily_diary", status: result.status, message: result.message });
       return {
         content: [{ type: "text", text: result.message }],
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      log("tool_call.error", { tool: "fill_daily_diary", message });
       return {
         content: [{ type: "text", text: `Failed to fill Daily Diary field: ${message}` }],
         isError: true,
@@ -36,5 +40,7 @@ server.registerTool(
   }
 );
 
+log("server.starting", { name: "mcp-internyx", version: "0.1.0" });
 const transport = new StdioServerTransport();
 await server.connect(transport);
+log("server.connected");
